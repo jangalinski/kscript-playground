@@ -20,10 +20,24 @@ enum class Choice { STONE, PAPER, SCISSORS }
 enum class Result { WIN, DRAW, LOOSE }
 data class Match(val player:Choice, val computer:Choice, val result:Result)
 
-sealed class Message {
-  data class PlayerChoice(val choice:Choice)
-  data class ComputerChoice(val choice:Choice)
+fun Choice.beats(): Array<Choice> = when (this) {
+    Choice.STONE -> arrayOf(Choice.SCISSORS)
+    Choice.SCISSORS -> arrayOf(Choice.PAPER)
+    Choice.PAPER -> arrayOf(Choice.STONE)
 }
+
+infix fun Choice.against(computer: Choice): Result = when (computer) {
+    this -> Result.DRAW
+    in beats() -> Result.WIN
+    else -> Result.LOOSE
+}
+
+sealed class Message {
+  data class PlayerChoice(val choice:Choice) : Message()
+  data class ComputerChoice(val choice:Choice = Choice.values().toList().shuffled().last())  : Message()
+}
+
+fun play(player:Message.PlayerChoice, computer:Message.ComputerChoice) = Match(player.choice, computer.choice, player.choice against computer.choice)
 
 val matches = mutableListOf<Match>()
 
@@ -34,8 +48,7 @@ embeddedServer(Netty, 8888) {
   routing {
     post("/matches") {
         val playerChoice  = call.receive<Message.PlayerChoice>()
-        val computerChoice = Message.ComputerChoice(Choice.STONE)
-        val match = Match(playerChoice.choice, computerChoice.choice, Result.WIN)
+        val match = play(playerChoice, Message.ComputerChoice())
         matches += match
         call.respond(HttpStatusCode.OK, match)
     }
