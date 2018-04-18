@@ -32,9 +32,11 @@ infix fun Choice.against(computer: Choice): Result = when (computer) {
     else -> Result.LOOSE
 }
 
-sealed class Message {
-  data class PlayerChoice(val choice:Choice) : Message()
-  data class ComputerChoice(val choice:Choice = Choice.values().toList().shuffled().last())  : Message()
+sealed class Message() {
+  abstract val choice:Choice
+
+  data class PlayerChoice(override val choice:Choice) : Message()
+  data class ComputerChoice(override val choice:Choice = Choice.values().toList().shuffled().last())  : Message()
 }
 
 fun play(player:Message.PlayerChoice, computer:Message.ComputerChoice) = Match(player.choice, computer.choice, player.choice against computer.choice)
